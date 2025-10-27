@@ -1,0 +1,88 @@
+﻿<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>설문조사</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 400px;
+            margin: 40px auto;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        .question {
+            margin-bottom: 25px;
+        }
+
+        button {
+            padding: 14px 40px; /* 버튼 크기 확대 */
+            font-size: 18px; /* 글자 크기 확대 */
+            background-color: #0078ff; /* 강조색 추가 */
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+            button:hover {
+                background-color: #005ecc; /* hover 효과 */
+            }
+
+        a {
+            text-decoration: none;
+            color: #0078ff;
+            font-weight: bold;
+            font-size: 18px;
+        }
+    </style>
+</head>
+<body>
+    <h1>간단한 설문조사</h1>
+    <form method="POST">
+
+        <div class="question">
+            <p><b>1. 이름을 선택해주세요.</b></p>
+            <label>이름:</label>
+            <input type="text" name="name" required autocomplete="off" style="width:80%; padding:8px; box-sizing:border-box;"><br><br>
+        </div>
+
+        <div class="question">
+            <p><b>2. 성별을 선택해주세요.</b></p>
+            <label><input type="radio" name="gender" value="남성" required> 남성</label><br>
+            <label><input type="radio" name="gender" value="여성"> 여성</label>
+        </div>
+
+        <div class="question">
+            <p><b>3. 본인이 속한 나이대를 선택해주세요.</b></p>
+            <label><input type="radio" name="age" value="0~8" required> 0~8</label><br>
+            <label><input type="radio" name="age" value="9~13"> 9~13</label><br>
+            <label><input type="radio" name="age" value="14~16"> 14~16</label><br>
+            <label><input type="radio" name="age" value="17~19"> 17~19</label><br>
+            <label><input type="radio" name="age" value="20~24"> 20~24</label><br>
+            <label><input type="radio" name="age" value="성인"> 성인</label>
+        </div>
+
+        <div class="question">
+            <p><b>4. 개인정보 수집동의 여부를 선택해주세요.</b></p>
+            <textarea rows="5" cols="50" readonly>
+[개인정보 수집 관련 조항]
+본 설문은 응답자의 성별, 연령대 등 정보를 수집하며,
+수집된 정보는 설문 통계 목적 외의 용도로 사용되지 않습니다.
+            </textarea><br><br>
+            <label><input type="radio" name="consent" value="동의한다" required> 동의한다</label><br>
+            <label><input type="radio" name="consent" value="동의하지 않는다"> 동의하지 않는다</label>
+        </div>
+
+        <div class="question" style="text-align:center;">
+            <button type="submit">제출하기</button>
+        </div>
+    </form>
+    <p style="text-align:center;">
+        <a href="{{ url_for('index') }}">⬅ 돌아가기</a>
+    </p>
+</body>
+</html>

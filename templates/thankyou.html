@@ -1,0 +1,43 @@
+﻿<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>감사합니다!</title>
+    <style>
+        body {
+            font-family: "Noto Sans KR", sans-serif;
+            text-align: center;
+            margin-top: 100px;
+        }
+
+        h1 {
+            color: #0078ff;
+        }
+
+        p {
+            font-size: 18px;
+            color: #333;
+        }
+
+        a {
+            display: inline-block;
+            margin-top: 30px;
+            padding: 10px 20px;
+            background-color: #0078ff;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            transition: background-color 0.2s;
+        }
+
+            a:hover {
+                background-color: #005fcc;
+            }
+    </style>
+</head>
+<body>
+    <h1>설문에 참여해 주셔서 감사합니다!</h1>
+    <p>😊소중한 의견이 반영되었습니다.😊</p>
+    <a href="{{ url_for('index') }}">홈으로 돌아가기</a>
+</body>
+</html>

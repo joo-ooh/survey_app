@@ -1,0 +1,264 @@
+﻿<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>설문조사 결과</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            max-width: 900px;
+            margin: 40px auto;
+            text-align: center;
+        }
+
+        h1, h2 {
+            text-align: center;
+        }
+
+        .chart-container {
+            display: flex;
+            justify-content: center;
+            margin: 30px 0;
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 70%;
+            margin: 0 auto 30px auto;
+        }
+
+        th, td {
+            border: 1px solid #aaa;
+            padding: 10px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f0f0f0;
+        }
+
+        tr:nth-child(even) {
+            background-color: #fafafa;
+        }
+
+        tr:hover {
+            background-color: #f5faff;
+        }
+
+        .tab-button {
+            padding: 10px 20px;
+            margin: 10px 5px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            background-color: #0078ff;
+            color: white;
+        }
+
+            .tab-button.active {
+                background-color: #005fcc;
+            }
+
+        .tab-content {
+            display: none;
+        }
+
+            .tab-content.active {
+                display: block;
+            }
+
+        .bottom-buttons {
+            margin-top: 30px;
+        }
+
+        button.download-btn, a.back-btn {
+            padding: 10px 20px;
+            font-size: 16px;
+            text-decoration: none;
+            color: white;
+            background-color: #0078ff;
+            border-radius: 5px;
+            margin: 5px;
+            border: none;
+            cursor: pointer;
+        }
+
+        a.back-btn {
+            background-color: #555;
+        }
+
+        .summary {
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>설문조사 결과</h1>
+    <p class="summary">총 응답자 수: {{ total_responses }}명</p>
+
+    <!-- 탭 버튼 -->
+    <div>
+        <button class="tab-button active" onclick="openTab('listTab')">전체목록 보기</button>
+        <button class="tab-button" onclick="openTab('tableTab')">표 보기</button>
+        <button class="tab-button" onclick="openTab('chartTab')">그래프 보기</button>
+    </div>
+
+    <!-- 전체목록 탭 -->
+    <div id="listTab" class="tab-content active">
+
+        <h2>성별에 따른 나이대 분포</h2>
+        <table>
+            <tr>
+                <th>번호</th>
+                <th>이름</th>
+                <th>성별</th>
+                <th>나이대</th>
+                <th>개인정보 동의</th>
+            </tr>
+            {% for r in results %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ r.name or '-' }}</td>
+                <td>{{ r.gender }}</td>
+                <td>{{ r.age }}</td>
+                <td>{{ r.consent }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+
+    <!-- 표 탭 -->
+    <div id="tableTab" class="tab-content">
+
+        <h2>성별에 따른 나이대 분포</h2>
+        <table>
+            <tr>
+                <th>성별</th>
+                {% for age in age_labels %}
+                <th>{{ age }}</th>
+                {% endfor %}
+            </tr>
+            {% for gender, ages in gender_age_data.items() %}
+            <tr>
+                <td style="color:#0078ff;"><b>{{ gender }}</b></td>
+                {% for age in age_labels %}
+                <td>{{ ages.get(age, 0) }}</td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </table>
+
+        <h2>성별 분포</h2>
+        <table>
+            <tr><th>성별</th><th>응답 수</th></tr>
+            {% for key, value in gender_counts.items() %}
+            <tr><td>{{ key }}</td><td>{{ value }}</td></tr>
+            {% endfor %}
+        </table>
+
+        <h2>나이대 분포</h2>
+        <table>
+            <tr><th>나이대</th><th>응답 수</th></tr>
+            {% for key, value in age_counts.items() %}
+            <tr><td>{{ key }}</td><td>{{ value }}</td></tr>
+            {% endfor %}
+        </table>
+
+        <h2>개인정보 동의 여부</h2>
+        <table>
+            <tr><th>응답</th><th>응답 수</th></tr>
+            {% for key, value in consent_counts.items() %}
+            <tr><td>{{ key }}</td><td>{{ value }}</td></tr>
+            {% endfor %}
+        </table>
+    </div>
+
+    <!-- 그래프 탭 -->
+    <div id="chartTab" class="tab-content">
+
+        <h2>성별에 따른 나이대 분포</h2>
+        <div class="chart-container">
+            <canvas id="genderAgeChart"></canvas>
+        </div>
+
+        <h2>성별 분포</h2>
+        <div class="chart-container">
+            <canvas id="genderChart"></canvas>
+        </div>
+
+        <h2>나이대 분포</h2>
+        <div class="chart-container">
+            <canvas id="ageChart"></canvas>
+        </div>
+
+        <h2>개인정보 동의 여부</h2>
+        <div class="chart-container">
+            <canvas id="consentChart"></canvas>
+        </div>
+    </div>
+
+    <!-- 하단 버튼 -->
+    <div class="bottom-buttons">
+        <button class="download-btn" onclick="window.location.href='/download_csv'">CSV 다운로드</button>
+        <a href="{{ url_for('index') }}" class="back-btn">← 뒤로가기</a>
+    </div>
+
+    <script>
+    function openTab(tabId) {
+        document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+        document.querySelector(`[onclick="openTab('${tabId}')"]`).classList.add('active');
+        document.getElementById(tabId).classList.add('active');
+    }
+
+    // 그래프 데이터
+    const genderLabels = {{ gender_labels | tojson }};
+    const genderValues = {{ gender_values | tojson }};
+    const ageLabels = {{ age_labels | tojson }};
+    const ageValues = {{ age_values | tojson }};
+    const consentLabels = {{ consent_labels | tojson }};
+    const consentValues = {{ consent_values | tojson }};
+    const genderAgeData = {{ gender_age_chart_data | tojson }};
+
+    const ctxGenderAge = document.getElementById('genderAgeChart');
+    new Chart(ctxGenderAge, {
+        type: 'bar',
+        data: {
+            labels: ageLabels,
+            datasets: Object.keys(genderAgeData).map((gender, i) => ({
+                label: gender,
+                data: genderAgeData[gender],
+                backgroundColor: i % 2 === 0 ? 'rgba(0, 120, 255, 0.6)' : 'rgba(255, 150, 0, 0.6)',
+            }))
+        },
+        options: { responsive: true, scales: { y: { beginAtZero: true } } }
+    });
+
+    const ctxGender = document.getElementById('genderChart');
+    new Chart(ctxGender, {
+        type: 'bar',
+        data: { labels: genderLabels, datasets: [{ label: '성별 분포', data: genderValues, backgroundColor: 'rgba(0,120,255,0.6)' }] },
+        options: { responsive: true, scales: { y: { beginAtZero: true } } }
+    });
+
+    const ctxAge = document.getElementById('ageChart');
+    new Chart(ctxAge, {
+        type: 'bar',
+        data: { labels: ageLabels, datasets: [{ label: '나이대 분포', data: ageValues, backgroundColor: 'rgba(255,150,0,0.6)' }] },
+        options: { responsive: true, scales: { y: { beginAtZero: true } } }
+    });
+
+    const ctxConsent = document.getElementById('consentChart');
+    new Chart(ctxConsent, {
+        type: 'bar',
+        data: { labels: consentLabels, datasets: [{ label: '개인정보 동의 여부', data: consentValues, backgroundColor: 'rgba(100,200,100,0.6)' }] },
+        options: { responsive: true, scales: { y: { beginAtZero: true } } }
+    });
+    </script>
+
+</body>
+</html>

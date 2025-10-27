@@ -1,0 +1,7 @@
+# Visual Studio temporary files
+.vs/
+__pycache__/
+*.pyc
+*.db
+*.sqlite3
+*.csv

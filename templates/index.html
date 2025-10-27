@@ -1,0 +1,56 @@
+﻿<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>설문조사 홈</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 100px;
+        }
+
+        h1 {
+            font-size: 3em;
+            margin-bottom: 40px;
+        }
+
+        a {
+            display: inline-block;
+            margin: 15px;
+            padding: 15px 40px;
+            background-color: #0078ff;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-size: 25px;
+        }
+
+            a:hover {
+                background-color: #005ec2;
+            }
+    </style>
+</head>
+<body>
+    <h1>배곧1 LIVE ON 버스킹 프로그램 참가자 이용대장</h1>
+    <a href="{{ url_for('survey') }}">이용대장 작성하기</a>
+    <a href="{{ url_for('result') }}">결과 보기</a>
+    <div style="margin-top: 100px; text-align:center;">
+        <h3 style="color:#555;">🔒 관리자 전용 기능 🔒</h3>
+        <form action="/reset" method="post">
+            <input type="password" name="admin_password"
+                   placeholder="관리자 비밀번호 입력"
+                   style="padding:8px; border-radius:6px; border:1px solid #ccc;">
+            <button type="submit"
+                    style="background-color: #dc3545;
+                       color: white;
+                       border: none;
+                       padding: 10px 20px;
+                       border-radius: 8px;
+                       cursor: pointer;">
+                ⚠️ 데이터 초기화 ⚠️
+            </button>
+        </form>
+    </div>
+</body>
+</html>
