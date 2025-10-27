@@ -30,6 +30,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include=".gitignore" />
+    <Content Include=".python-version" />
     <Content Include="Procfile" />
     <Content Include="requirements.txt" />
     <Content Include="templates\index.html" />
