@@ -296,11 +296,11 @@ def download_csv():
 
     # 4. 파일 다운로드
     return send_file(
-        io.BytesIO(output.getvalue().encode("utf-8")),
-        mimetype="text/csv",
-        as_attachment=True,
-        download_name="survey_export.csv"
-    )
+    io.BytesIO(("\ufeff" + output.getvalue()).encode("utf-8")),  # ✅ UTF-8 BOM 추가
+    mimetype="text/csv; charset=utf-8",
+    as_attachment=True,
+    download_name="survey_export.csv"
+)
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
