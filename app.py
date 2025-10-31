@@ -280,13 +280,16 @@ def download_csv():
     else:
         return "데이터가 없습니다.", 404
 
-    # 3. CSV 생성
+    # 3. CSV 생성 (UTF-8 BOM 포함)
     try:
         output = io.StringIO()
         writer = csv.writer(output)
-        writer.writerow(["name", "gender", "age", "consent"])  # 헤더
+        writer.writerow(["이름", "성별", "나이", "개인정보 동의"])  # 헤더
         writer.writerows(data)
         output.seek(0)
+
+        # ✅ UTF-8 BOM 추가 (Excel에서 한글 깨짐 방지)
+        csv_with_bom = "\ufeff" + output.getvalue()
     except Exception as e:
         print(f"CSV 생성 오류: {e}")
         return "CSV를 생성할 수 없습니다.", 500
