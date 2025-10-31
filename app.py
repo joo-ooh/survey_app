@@ -1,5 +1,5 @@
-﻿from flask import Flask, render_template, request, redirect, url_for
-import csv, os, sys
+﻿from flask import Flask, render_template, request, redirect, url_for, send_file, flash
+import csv, os, sys, io
 from collections import Counter, defaultdict
 from urllib.parse import urlparse
 import psycopg2
@@ -234,6 +234,70 @@ def reset():
             print(f"DB 초기화 오류: {e}")
 
     return render_template("reset_done.html")
+
+@app.route("/download_csv")
+def download_csv():
+    data = []
+
+    # 1. PostgreSQL에서 데이터 가져오기
+    if DATABASE_URL:
+        try:
+            conn = get_db_connection()
+            cur = conn.cursor()
+            cur.execute("SELECT name, gender, age, consent FROM responses")
+            rows = cur.fetchall()
+            for row in rows:
+                data.append(row)
+            cur.close()
+            conn.close()
+        except Exception as e:
+            print(f"DB 읽기 오류: {e}")
+            # DB 오류 발생 시 CSV 파일에서 읽도록 fallback
+            if os.path.exists(DATA_FILE):
+                try:
+                    with open(DATA_FILE, newline="", encoding="utf-8") as f:
+                        reader = csv.reader(f)
+                        next(reader, None)  # 헤더 건너뛰기
+                        for row in reader:
+                            data.append(row)
+                except Exception as f_err:
+                    print(f"CSV 읽기 오류: {f_err}")
+                    return "데이터를 가져올 수 없습니다.", 500
+            else:
+                return "데이터가 없습니다.", 404
+
+    # 2. DATABASE_URL이 없는 경우 → CSV 파일에서 읽기
+    elif os.path.exists(DATA_FILE):
+        try:
+            with open(DATA_FILE, newline="", encoding="utf-8") as f:
+                reader = csv.reader(f)
+                next(reader, None)  # 헤더 건너뛰기
+                for row in reader:
+                    data.append(row)
+        except Exception as e:
+            print(f"CSV 읽기 오류: {e}")
+            return "데이터를 가져올 수 없습니다.", 500
+    else:
+        return "데이터가 없습니다.", 404
+
+    # 3. CSV 생성
+    try:
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow(["name", "gender", "age", "consent"])  # 헤더
+        writer.writerows(data)
+        output.seek(0)
+    except Exception as e:
+        print(f"CSV 생성 오류: {e}")
+        return "CSV를 생성할 수 없습니다.", 500
+
+    # 4. 파일 다운로드
+    return send_file(
+        io.BytesIO(output.getvalue().encode("utf-8")),
+        mimetype="text/csv",
+        as_attachment=True,
+        download_name="survey_export.csv"
+    )
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
