@@ -1,8 +1,8 @@
 ﻿from flask import Flask, render_template, request, redirect, url_for
-import csv, sqlite3
-import os
+import csv, os, sys
 from collections import Counter, defaultdict
-import sys
+from urllib.parse import urlparse
+import psycopg2
 
 app = Flask(__name__)
 
@@ -27,6 +27,40 @@ if not os.path.exists(DATA_FILE):
     with open(DATA_FILE, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         writer.writerow(["name", "gender", "age", "consent"])
+
+# Render Internal Database URL 가져오기
+DATABASE_URL = os.environ.get("DATABASE_URL")
+
+# PostgreSQL 연결용 함수
+def get_db_connection():
+    if not DATABASE_URL:
+        raise Exception("DATABASE_URL 환경변수가 설정되지 않았습니다.")
+    result = urlparse(DATABASE_URL)
+    conn = psycopg2.connect(
+        database=result.path[1:],
+        user=result.username,
+        password=result.password,
+        host=result.hostname,
+        port=result.port
+    )
+    return conn
+
+# 초기 테이블 생성
+if DATABASE_URL:
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS responses (
+            id SERIAL PRIMARY KEY,
+            name TEXT NOT NULL,
+            gender TEXT NOT NULL,
+            age TEXT NOT NULL,
+            consent TEXT NOT NULL
+        )
+    """)
+    conn.commit()
+    cur.close()
+    conn.close()
 
 # 기본 라벨 순서
 AGE_ORDER = ["0~8", "9~13", "14~16", "17~19", "20~24", "성인"]
@@ -59,6 +93,21 @@ def survey():
         result = {"name": name, "gender": gender, "age": age, "consent": consent}
         survey_results.append(result)
 
+        # PostgreSQL에 저장
+        if DATABASE_URL:
+            try:
+                conn = get_db_connection()
+                cur = conn.cursor()
+                cur.execute(
+                    "INSERT INTO responses (name, gender, age, consent) VALUES (%s, %s, %s, %s)",
+                    (name, gender, age, consent)
+                )
+                conn.commit()
+                cur.close()
+                conn.close()
+            except Exception as e:
+                print(f"DB 저장 오류: {e}")
+
         return redirect(url_for("thankyou"))
     return render_template("survey.html")
 
@@ -70,31 +119,35 @@ def thankyou():
 def result():
     # CSV 읽기
     data = []
-    if os.path.exists(DATA_FILE):
+    if DATABASE_URL:
+        try:
+            conn = get_db_connection()
+            cur = conn.cursor()
+            cur.execute("SELECT name, gender, age, consent FROM responses")
+            rows = cur.fetchall()
+            for row in rows:
+                data.append({
+                    "name": row[0],
+                    "gender": row[1],
+                    "age": row[2],
+                    "consent": row[3]
+                })
+            cur.close()
+            conn.close()
+        except Exception as e:
+            print(f"DB 읽기 오류: {e}")
+    elif os.path.exists(DATA_FILE):
         with open(DATA_FILE, newline="", encoding="utf-8") as f:
             reader = csv.reader(f)
             header = next(reader, None)
-
             for row in reader:
                 if len(row) >= 4: 
                     data.append({
-                        # 인덱스를 사용하여 명확하게 매핑
                         "name": row[0].strip(),
                         "gender": row[1].strip(),
                         "age": row[2].strip(),
                         "consent": row[3].strip()
                     })
-                # 혹시 데이터가 잘못된 경우 대비
-                else:
-                    print(f"경고: 잘못된 형식의 데이터 행 감지 - {row}")
-
-                # data.append({
-                #     "name": row.get("name", "").strip(),
-                #     "gender": row.get("gender", "").strip(),
-                #     "age": row.get("age", "").strip(),
-                #     "consent": row.get("consent", "").strip()
-                # })
-
 
     # 집계 초기화
     gender_counts = Counter()
@@ -167,19 +220,21 @@ def reset():
         with open(DATA_FILE, "w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
             writer.writerow(["name", "gender", "age", "consent"])
+    
+    # PostgreSQL 초기화
+    if DATABASE_URL:
+        try:
+            conn = get_db_connection()
+            cur = conn.cursor()
+            cur.execute("DELETE FROM responses")
+            conn.commit()
+            cur.close()
+            conn.close()
+        except Exception as e:
+            print(f"DB 초기화 오류: {e}")
+
     return render_template("reset_done.html")
 
-# 관리자 권한 없는 데이터 초기화 버튼
-# @app.route("/reset", methods=["POST"])
-# def reset():
-#     # CSV 파일 초기화 (헤더만 남기기)
-#     if os.path.exists(DATA_FILE):
-#         with open(DATA_FILE, "w", newline="", encoding="utf-8") as f:
-#             writer = csv.writer(f)
-#             writer.writerow(["name", "gender", "age", "consent"])  # 헤더만 다시 작성
-#     return render_template("reset_done.html")
-
 if __name__ == "__main__":
-    app.run(debug=True)
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=port, debug=True)
